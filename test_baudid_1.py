@@ -84,7 +84,79 @@ def modbaudid(BAUDRATE, SlaveID):
     return red, alarm  # 如果异常就返回[],故障信息
 
 
-def modifybaudid(BAUDRATE, SlaveID, New_SlaveID):
+def modifybaud_h(BAUDRATE, SlaveID, New_BAUDRATE):
+    red = []
+    alarm = ""
+    try:
+        # 设定串口为从站
+        master = modbus_rtu.RtuMaster(
+            serial.Serial(port=selected_port,
+                          baudrate=BAUDRATE,
+                          bytesize=8,
+                          parity='N',
+                          stopbits=1))
+        master.set_timeout(0.05)  # 50ms
+        master.set_verbose(True)
+
+        # 将十进制转换为十六进制，并用0填充成8位
+        New_BAUDRATE_hex = hex(int(New_BAUDRATE))[2:].zfill(8)
+        # 将十六进制字符串转换为两个字节的波特率高位和波特率低位
+        New_BAUDRATE_H = hex(int(New_BAUDRATE_hex[:4], 16))
+        NH = int(New_BAUDRATE_H, 16)
+        print(New_BAUDRATE_hex, New_BAUDRATE_H, NH)
+        
+        # 写保持寄存器
+        red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x83,
+                             output_value=NH)  # 修改波特率高字节指令
+
+        alarm = "正常"
+
+        return alarm
+
+    except Exception as exc:
+        # print(str(exc))
+        alarm = (str(exc))
+
+    return red, alarm  # 如果异常就返回[],故障信息
+
+
+def modifybaud_l(BAUDRATE, SlaveID, New_BAUDRATE):
+    red = []
+    alarm = ""
+    try:
+        # 设定串口为从站
+        master = modbus_rtu.RtuMaster(
+            serial.Serial(port=selected_port,
+                          baudrate=BAUDRATE,
+                          bytesize=8,
+                          parity='N',
+                          stopbits=1))
+        master.set_timeout(0.05)  # 50ms
+        master.set_verbose(True)
+
+        # 将十进制转换为十六进制，并用0填充成8位
+        New_BAUDRATE_hex = hex(int(New_BAUDRATE))[2:].zfill(8)
+        # 将十六进制字符串转换为两个字节的波特率高位和波特率低位
+        New_BAUDRATE_L = hex(int(New_BAUDRATE_hex[4:], 16))
+        NL = int(New_BAUDRATE_L, 16)
+        print(New_BAUDRATE_hex,New_BAUDRATE_L, NL)
+        
+        # 写保持寄存器
+        red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x84,
+                             output_value=NL)  # 修改波特率低字节指令
+
+        alarm = "正常"
+
+        return alarm
+
+    except Exception as exc:
+        # print(str(exc))
+        alarm = (str(exc))
+
+    return red, alarm  # 如果异常就返回[],故障信息
+
+
+def modifyid(BAUDRATE, SlaveID, New_SlaveID):
     red = []
     alarm = ""
     try:
@@ -100,14 +172,39 @@ def modifybaudid(BAUDRATE, SlaveID, New_SlaveID):
 
         # 写保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x85,
-                             output_value=New_SlaveID)  # 这里可以修改需要读取的功能码
+                             output_value=New_SlaveID)  # 修改id指令
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x80,
-                             output_value=0)  # 这里可以修改需要读取的功能码
+                             output_value=0)  # 保存配置指令
 
-        # 读保持寄存器
-        red = master.execute(slave=New_SlaveID, function_code=cst.READ_HOLDING_REGISTERS, starting_address=0,
-                             quantity_of_x=2)  # 这里可以修改需要读取的功能码
-        print(red)
+        alarm = "正常"
+
+        return alarm
+
+    except Exception as exc:
+        # print(str(exc))
+        alarm = (str(exc))
+
+    return red, alarm  # 如果异常就返回[],故障信息
+
+
+def savelidar(BAUDRATE, SlaveID):
+    red = []
+    alarm = ""
+    try:
+        # 设定串口为从站
+        master = modbus_rtu.RtuMaster(
+            serial.Serial(port=selected_port,
+                          baudrate=BAUDRATE,
+                          bytesize=8,
+                          parity='N',
+                          stopbits=1))
+        master.set_timeout(0.05)  # 50ms
+        master.set_verbose(True)
+
+        # 写保持寄存器
+        red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x80,
+                             output_value=0)  # 重启设备指令
+        
         alarm = "正常"
 
         return alarm
@@ -135,7 +232,7 @@ def resetlidar(BAUDRATE, SlaveID):
 
         # 写保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x81,
-                             output_value=1)  # 这里可以修改需要读取的功能码
+                             output_value=1)  # 重启设备指令
         
         alarm = "正常"
 
@@ -152,7 +249,7 @@ def resetlidar(BAUDRATE, SlaveID):
 def modify_modbaudid(BAUDRATE, SlaveID):
     new_baudrate = BAUDRATE
     new_id = SlaveID
-    print("是否要修改波特率和ID?\n 1.修改波特率\n 2.修改id\n 3.修改波特率和id\n 4.否,输出空行")
+    print("功能选择：\n 1.修改波特率\n 2.修改id\n 3.扫描设备波特率和id并测距\n 4.退出执行")
     while True:
         try:
             chose = int(input("请输入要选择的操作: "))
@@ -167,11 +264,8 @@ def modify_modbaudid(BAUDRATE, SlaveID):
                 new_id = int(input())
 
             elif chose == 3:
-                # 获取用户输入的波特率和ID
-                print("请输入您想要设置的波特率和ID:")
-                new_baudrate = int(input())
-                new_id = int(input())
-
+                print("1")
+            
             elif chose == 4:
                 print(" ")
 
@@ -198,7 +292,7 @@ if __name__ == "__main__":
             if z == '正常':
                 print("当前波特率：", Baudrate[x], "当前站号：", y)
                 id = y
-                baudr = Baudrate[x]
+                baudrate = Baudrate[x]
                 
     end_time = time()
     run_time = end_time - begin_time
@@ -207,26 +301,22 @@ if __name__ == "__main__":
     i = 1
     while i == 1:
         # 调用修改波特率和ID的函数，获取新的波特率和ID
-        new_baudrate, new_id = modify_modbaudid(baudr, id)
-        if new_baudrate != baudr:
+        new_baudrate, new_id = modify_modbaudid(baudrate, id)
+        if new_baudrate != baudrate:
             # 如果获取到了新的波特率，则修改设备的波特率
-            z = modifybaudid(new_baudrate, id, new_id)
-            if z == '正常':
-                print("修改后的波特率：", new_baudrate)
+            modifybaud_h(new_baudrate, id, new_baudrate)
+            modifybaud_l(new_baudrate, id, new_baudrate)
+            savelidar(new_baudrate, id)
+            resetlidar(baudrate, id)
+            print("修改后的波特率:", new_baudrate, "\n")
 
         elif new_id != id:
             # 如果获取到了新的ID，则修改设备的ID
-            modifybaudid(baudr, id, new_id)
-            resetlidar(baudr, id)
+            modifyid(baudrate, id, new_id)
+            resetlidar(baudrate, id)
             print("修改后的id:", new_id, "\n")
 
-        elif new_baudrate != baudr and new_id != id:
-            # 如果获取到了新的波特率和ID，则修改设备的波特率和ID
-            z = modifybaudid(new_baudrate, id, new_id)
-            if z == '正常':
-                print("修改后的波特率和id:", new_baudrate, new_id)
-
-        elif new_baudrate == baudr and new_id == id:
+        elif new_baudrate == baudrate and new_id == id:
             print("未修改波特率和ID\n")
             i = 0
 
