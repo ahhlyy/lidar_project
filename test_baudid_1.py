@@ -65,15 +65,16 @@ def modbaudid(BAUDRATE, SlaveID):
                           bytesize=8,
                           parity='N',
                           stopbits=1))
-        master.set_timeout(0.01)  # 50ms
+        master.set_timeout(0.05)  # 50ms
         master.set_verbose(True)
 
         # 读保持寄存器
-        red = master.execute(SlaveID, cst.READ_HOLDING_REGISTERS, 0,
-                             2)  # 这里可以修改需要读取的功能码
+        red = master.execute(slave=SlaveID, function_code=cst.READ_HOLDING_REGISTERS, starting_address=0,
+                             quantity_of_x=2)  # 这里可以修改需要读取的功能码
+        
         print(red)
         alarm = "正常"
-
+        
         return alarm
 
     except Exception as exc:
@@ -83,7 +84,7 @@ def modbaudid(BAUDRATE, SlaveID):
     return red, alarm  # 如果异常就返回[],故障信息
 
 
-def modifybaudid(BAUDRATE, SlaveID):
+def modifybaudid(BAUDRATE, SlaveID, New_SlaveID):
     red = []
     alarm = ""
     try:
@@ -94,12 +95,18 @@ def modifybaudid(BAUDRATE, SlaveID):
                           bytesize=8,
                           parity='N',
                           stopbits=1))
-        master.set_timeout(0.01)  # 50ms
+        master.set_timeout(0.05)  # 50ms
         master.set_verbose(True)
 
         # 写保持寄存器
-        red = master.execute(SlaveID, cst.WRITE_SINGLE_REGISTER, 0x85,
-                             output_value=new_id)  # 这里可以修改需要读取的功能码
+        red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x85,
+                             output_value=New_SlaveID)  # 这里可以修改需要读取的功能码
+        red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x80,
+                             output_value=0)  # 这里可以修改需要读取的功能码
+
+        # 读保持寄存器
+        red = master.execute(slave=New_SlaveID, function_code=cst.READ_HOLDING_REGISTERS, starting_address=0,
+                             quantity_of_x=2)  # 这里可以修改需要读取的功能码
         print(red)
         alarm = "正常"
 
@@ -157,10 +164,13 @@ if __name__ == "__main__":
     
     begin_time = time()
     for x in range(5):
-        for y in range(1, 10):
+        for y in range(1, 5):     
             z = modbaudid(Baudrate[x], y)
             if z == '正常':
                 print("当前波特率：", Baudrate[x], "当前站号：", y)
+                id = y
+                baudr = Baudrate[x]
+                
     end_time = time()
     run_time = end_time - begin_time
     print("查询运行时间：", run_time)
@@ -168,37 +178,32 @@ if __name__ == "__main__":
     i = 1
     while i == 1:
         # 调用修改波特率和ID的函数，获取新的波特率和ID
-        new_baudrate, new_id = modify_modbaudid(Baudrate[x], y)
-        if new_baudrate != Baudrate[x]:
+        new_baudrate, new_id = modify_modbaudid(baudr, id)
+        if new_baudrate != baudr:
             # 如果获取到了新的波特率，则修改设备的波特率
-            z = modifybaudid(new_baudrate, y)
+            z = modifybaudid(new_baudrate, id, new_id)
             if z == '正常':
                 print("修改后的波特率：", new_baudrate)
-                i = 0
-            #break
+            i = 0
 
-        elif new_id != y:
+        elif new_id != id:
             # 如果获取到了新的ID，则修改设备的ID
-            z = modifybaudid(Baudrate[x], new_id)
-            if z == '正常':
-                print("修改后的id:", new_id)
-                i = 0
-            #break
+            z = modifybaudid(baudr, id, new_id)
+            print("id已修改为:", new_id, "，请重启设备")
+            i = 0
 
-        elif new_baudrate != Baudrate[x] and new_id != y:
+        elif new_baudrate != baudr and new_id != id:
             # 如果获取到了新的波特率和ID，则修改设备的波特率和ID
-            z = modifybaudid(new_baudrate, new_id)
+            z = modifybaudid(new_baudrate, id, new_id)
             if z == '正常':
                 print("修改后的波特率和id:", new_baudrate, new_id)
-                i = 0
-            #break
-
-        else :
-            print("未输入波特率和ID")
             i = 0
-            break
-   
 
-    
-    
-            
+        elif new_baudrate == baudr and new_id == id:
+            print("未修改波特率和ID")
+            i = 0
+
+        else:
+            print("出现异常")
+            i = 0
+             
