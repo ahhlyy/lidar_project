@@ -119,11 +119,40 @@ def modifybaudid(BAUDRATE, SlaveID, New_SlaveID):
     return red, alarm  # 如果异常就返回[],故障信息
 
 
+def resetlidar(BAUDRATE, SlaveID):
+    red = []
+    alarm = ""
+    try:
+        # 设定串口为从站
+        master = modbus_rtu.RtuMaster(
+            serial.Serial(port=selected_port,
+                          baudrate=BAUDRATE,
+                          bytesize=8,
+                          parity='N',
+                          stopbits=1))
+        master.set_timeout(0.05)  # 50ms
+        master.set_verbose(True)
+
+        # 写保持寄存器
+        red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x81,
+                             output_value=1)  # 这里可以修改需要读取的功能码
+        
+        alarm = "正常"
+
+        return alarm
+
+    except Exception as exc:
+        # print(str(exc))
+        alarm = (str(exc))
+
+    return red, alarm  # 如果异常就返回[],故障信息
+
+
 # 新建函数，进行设备波特率和 ID 的修改
 def modify_modbaudid(BAUDRATE, SlaveID):
     new_baudrate = BAUDRATE
     new_id = SlaveID
-    print("是否要修改波特率和ID? 1.是,修改波特率 2.是,修改id 3.是,修改波特率和id 4.否,输出空行")
+    print("是否要修改波特率和ID?\n 1.修改波特率\n 2.修改id\n 3.修改波特率和id\n 4.否,输出空行")
     while True:
         try:
             chose = int(input("请输入要选择的操作: "))
@@ -173,7 +202,7 @@ if __name__ == "__main__":
                 
     end_time = time()
     run_time = end_time - begin_time
-    print("查询运行时间：", run_time)
+    print("查询运行时间：", run_time, "\n")
 
     i = 1
     while i == 1:
@@ -184,26 +213,35 @@ if __name__ == "__main__":
             z = modifybaudid(new_baudrate, id, new_id)
             if z == '正常':
                 print("修改后的波特率：", new_baudrate)
-            i = 0
 
         elif new_id != id:
             # 如果获取到了新的ID，则修改设备的ID
-            z = modifybaudid(baudr, id, new_id)
-            print("id已修改为:", new_id, "，请重启设备")
-            i = 0
+            modifybaudid(baudr, id, new_id)
+            resetlidar(baudr, id)
+            print("修改后的id:", new_id, "\n")
 
         elif new_baudrate != baudr and new_id != id:
             # 如果获取到了新的波特率和ID，则修改设备的波特率和ID
             z = modifybaudid(new_baudrate, id, new_id)
             if z == '正常':
                 print("修改后的波特率和id:", new_baudrate, new_id)
-            i = 0
 
         elif new_baudrate == baudr and new_id == id:
-            print("未修改波特率和ID")
+            print("未修改波特率和ID\n")
             i = 0
 
         else:
             print("出现异常")
             i = 0
-             
+
+    begin_time = time()
+    print("对修改后的设备重新进行测距")
+    for x in range(5):
+        for y in range(1, 5):     
+            z = modbaudid(Baudrate[x], y)
+            if z == '正常':
+                print("当前波特率：", Baudrate[x], "当前站号：", y)
+                
+    end_time = time()
+    run_time = end_time - begin_time
+    print("查询运行时间：", run_time)
