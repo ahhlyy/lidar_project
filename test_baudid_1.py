@@ -173,8 +173,8 @@ def modifyid(BAUDRATE, SlaveID, New_SlaveID):
         # 写保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x85,
                              output_value=New_SlaveID)  # 修改id指令
-        red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x80,
-                             output_value=0)  # 保存配置指令
+        #red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x80,
+        #                     output_value=0)  # 保存配置指令
 
         alarm = "正常"
 
@@ -204,6 +204,7 @@ def savelidar(BAUDRATE, SlaveID):
         # 写保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x80,
                              output_value=0)  # 重启设备指令
+        master.set_timeout(5.05)
 
         alarm = "正常"
 
@@ -255,13 +256,25 @@ def modify_modbaudid(BAUDRATE, SlaveID):
             chose = int(input("请输入要选择的操作: "))
             if chose == 1:
                 # 获取用户输入的波特率
-                print("请输入您想要设置的波特率：")
-                new_baudrate = int(input())
+                print("请输入您想要设置的波特率:9600、19200、38400、57600、115200")
+                check_baudnum = int(input())
 
+                while check_baudnum not in Baudrate:
+                    print("波特率输入不正确,请重新输入")
+                    check_baudnum = int(input())
+                
+                new_baudrate = check_baudnum
+                    
             elif chose == 2:
                 # 获取用户输入的ID
-                print("请输入您想要设置的id:")
-                new_id = int(input())
+                print("请输入您想要设置的id:1-255")
+                check_idnum = int(input())
+
+                while check_idnum not in range(256):
+                    print("id输入不正确,请重新输入")
+                    check_idnum = int(input())
+                
+                new_id = check_idnum                
 
             elif chose == 4:
                 print("开始测距,同时扫描波特率和id")
@@ -296,17 +309,22 @@ def lidarfunc(baudrate, id):
             modifybaud_h(baudrate, id, new_baudrate)
             modifybaud_l(baudrate, id, new_baudrate)
             savelidar(baudrate, id)
+            sleep(5)
             resetlidar(baudrate, id)
             print("修改后的波特率:", new_baudrate, "\n")
+            i = 0
 
         elif new_id != id:
             # 如果获取到了新的ID，则修改设备的ID
             modifyid(baudrate, id, new_id)
+            savelidar(baudrate, id)
+            sleep(5)
             resetlidar(baudrate, id)
             print("修改后的id:", new_id, "\n")
+            i = 0
 
         elif new_baudrate == baudrate and new_id == id:
-            print("未修改波特率和ID\n")
+            print("\n未修改波特率和ID\n")
             i = 0
 
         else:
@@ -328,10 +346,14 @@ def endfunction():
                         z = modbaudid(Baudrate[x], y)
                         if z == '正常':
                             print("当前波特率：", Baudrate[x], "当前站号：", y)
+                            baudrate1 = Baudrate[x]
+                            id1 = y
 
                 end_time = time()
                 run_time = end_time - begin_time
-                print("查询运行时间：", run_time)
+                print("查询运行时间：", run_time, "\n")
+                lidarfunc(baudrate1, id1)
+                #if chose = 3
                 break
 
             elif tag == 2:
@@ -356,7 +378,7 @@ if __name__ == "__main__":
     begin_time = time()
     flag = False
     for x in range(5):
-        for y in range(1, 5):
+        for y in range(1, 20):
             z = modbaudid(Baudrate[x], y)
             if z == '正常':
                 print("当前波特率：", Baudrate[x], "当前站号：", y)
