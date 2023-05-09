@@ -167,7 +167,7 @@ def modifyid(BAUDRATE, SlaveID, New_SlaveID):
                           bytesize=8,
                           parity='N',
                           stopbits=1))
-        master.set_timeout(0.05)  # 50ms
+        master.set_timeout(5.05)  # 50ms
         master.set_verbose(True)
 
         # 写保持寄存器
@@ -198,7 +198,7 @@ def savelidar(BAUDRATE, SlaveID):
                           bytesize=8,
                           parity='N',
                           stopbits=1))
-        master.set_timeout(0.05)  # 50ms
+        master.set_timeout(5.05)  # 50ms
         master.set_verbose(True)
 
         # 写保持寄存器
@@ -246,8 +246,8 @@ def resetlidar(BAUDRATE, SlaveID):
     return red, alarm  # 如果异常就返回[],故障信息
 
 
-# 新建函数，进行设备波特率和 ID 的修改
-def modify_modbaudid(BAUDRATE, SlaveID):
+# 功能选择函数，用户输入新波特率和 ID 
+def menu(BAUDRATE, SlaveID):
     new_baudrate = BAUDRATE
     new_id = SlaveID
     print("功能选择：\n 1.修改波特率\n 2.修改id\n 3.退出执行")#扫描修改后设备的波特率和id并测距\n 4.")
@@ -276,17 +276,6 @@ def modify_modbaudid(BAUDRATE, SlaveID):
                 
                 new_id = check_idnum                
 
-            elif chose == 4:
-                print("开始测距,同时扫描波特率和id")
-                begin_time = time()
-                z = modbaudid(new_baudrate, new_id)
-                if z == '正常':
-                    print("当前波特率：", new_baudrate, "当前站号：", new_id)
-
-                end_time = time()
-                run_time = end_time - begin_time
-                print("查询运行时间：", run_time)
-
             elif chose == 3:
                 print(" ")
 
@@ -303,13 +292,13 @@ def lidarfunc(baudrate, id):
     i = 1
     while i == 1:
         # 调用修改波特率和ID的函数，获取新的波特率和ID
-        new_baudrate, new_id = modify_modbaudid(baudrate, id)
+        new_baudrate, new_id = menu(baudrate, id)
         if new_baudrate != baudrate:
             # 如果获取到了新的波特率，则修改设备的波特率
             modifybaud_h(baudrate, id, new_baudrate)
             modifybaud_l(baudrate, id, new_baudrate)
             savelidar(baudrate, id)
-            sleep(5)
+            #sleep(5)
             resetlidar(baudrate, id)
             print("修改后的波特率:", new_baudrate, "\n")
             i = 0
@@ -318,7 +307,7 @@ def lidarfunc(baudrate, id):
             # 如果获取到了新的ID，则修改设备的ID
             modifyid(baudrate, id, new_id)
             savelidar(baudrate, id)
-            sleep(5)
+            #sleep(5)
             resetlidar(baudrate, id)
             print("修改后的id:", new_id, "\n")
             i = 0
@@ -330,6 +319,7 @@ def lidarfunc(baudrate, id):
         else:
             print("出现异常")
             i = 0
+
 
 
 def endfunction():
@@ -353,7 +343,7 @@ def endfunction():
                 run_time = end_time - begin_time
                 print("查询运行时间：", run_time, "\n")
                 lidarfunc(baudrate1, id1)
-                #if chose = 3
+
                 break
 
             elif tag == 2:
