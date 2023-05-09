@@ -71,10 +71,10 @@ def modbaudid(BAUDRATE, SlaveID):
         # 读保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.READ_HOLDING_REGISTERS, starting_address=0,
                              quantity_of_x=2)  # 这里可以修改需要读取的功能码
-        
+
         print(red)
         alarm = "正常"
-        
+
         return alarm
 
     except Exception as exc:
@@ -103,8 +103,8 @@ def modifybaud_h(BAUDRATE, SlaveID, New_BAUDRATE):
         # 将十六进制字符串转换为两个字节的波特率高位和波特率低位
         New_BAUDRATE_H = hex(int(New_BAUDRATE_hex[:4], 16))
         NH = int(New_BAUDRATE_H, 16)
-        print(New_BAUDRATE_hex, New_BAUDRATE_H, NH)
-        
+        # print(New_BAUDRATE_hex, New_BAUDRATE_H, NH)
+
         # 写保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x83,
                              output_value=NH)  # 修改波特率高字节指令
@@ -139,8 +139,8 @@ def modifybaud_l(BAUDRATE, SlaveID, New_BAUDRATE):
         # 将十六进制字符串转换为两个字节的波特率高位和波特率低位
         New_BAUDRATE_L = hex(int(New_BAUDRATE_hex[4:], 16))
         NL = int(New_BAUDRATE_L, 16)
-        print(New_BAUDRATE_hex,New_BAUDRATE_L, NL)
-        
+        # print(New_BAUDRATE_hex, New_BAUDRATE_L, NL)
+
         # 写保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x84,
                              output_value=NL)  # 修改波特率低字节指令
@@ -204,7 +204,7 @@ def savelidar(BAUDRATE, SlaveID):
         # 写保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x80,
                              output_value=0)  # 重启设备指令
-        
+
         alarm = "正常"
 
         return alarm
@@ -233,7 +233,7 @@ def resetlidar(BAUDRATE, SlaveID):
         # 写保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x81,
                              output_value=1)  # 重启设备指令
-        
+
         alarm = "正常"
 
         return alarm
@@ -249,7 +249,7 @@ def resetlidar(BAUDRATE, SlaveID):
 def modify_modbaudid(BAUDRATE, SlaveID):
     new_baudrate = BAUDRATE
     new_id = SlaveID
-    print("功能选择：\n 1.修改波特率\n 2.修改id\n 3.扫描设备波特率和id并测距\n 4.退出执行")
+    print("功能选择：\n 1.修改波特率\n 2.修改id\n 3.退出执行")#扫描修改后设备的波特率和id并测距\n 4.")
     while True:
         try:
             chose = int(input("请输入要选择的操作: "))
@@ -263,50 +263,39 @@ def modify_modbaudid(BAUDRATE, SlaveID):
                 print("请输入您想要设置的id:")
                 new_id = int(input())
 
-            elif chose == 3:
-                print("1")
-            
             elif chose == 4:
+                print("开始测距,同时扫描波特率和id")
+                begin_time = time()
+                z = modbaudid(new_baudrate, new_id)
+                if z == '正常':
+                    print("当前波特率：", new_baudrate, "当前站号：", new_id)
+
+                end_time = time()
+                run_time = end_time - begin_time
+                print("查询运行时间：", run_time)
+
+            elif chose == 3:
                 print(" ")
 
             else:
                 print("输入不正确，请重新输入")
 
         except ValueError:
-            print("输入不正确，请重新输入")         
+            print("输入不正确，请重新输入")
 
         return new_baudrate, new_id
 
 
-if __name__ == "__main__":
-    selected_port = choose_serial_port()
-
-    print("开始扫描当前雷达站号和波特率,全部扫描结束时间为90S左右")
-    print("雷达站号范围:1-10,波特率:9600、19200、38400、57600、115200")
-    print("----------------------------------------")
-    
-    begin_time = time()
-    for x in range(5):
-        for y in range(1, 5):     
-            z = modbaudid(Baudrate[x], y)
-            if z == '正常':
-                print("当前波特率：", Baudrate[x], "当前站号：", y)
-                id = y
-                baudrate = Baudrate[x]
-                
-    end_time = time()
-    run_time = end_time - begin_time
-    print("查询运行时间：", run_time, "\n")
-
+def lidarfunc(baudrate, id):
     i = 1
     while i == 1:
         # 调用修改波特率和ID的函数，获取新的波特率和ID
         new_baudrate, new_id = modify_modbaudid(baudrate, id)
         if new_baudrate != baudrate:
             # 如果获取到了新的波特率，则修改设备的波特率
-            modifybaud_h(new_baudrate, id, new_baudrate)
-            modifybaud_l(new_baudrate, id, new_baudrate)
-            savelidar(new_baudrate, id)
+            modifybaud_h(baudrate, id, new_baudrate)
+            modifybaud_l(baudrate, id, new_baudrate)
+            savelidar(baudrate, id)
             resetlidar(baudrate, id)
             print("修改后的波特率:", new_baudrate, "\n")
 
@@ -324,14 +313,63 @@ if __name__ == "__main__":
             print("出现异常")
             i = 0
 
+
+def endfunction():
+    print("操作完毕\n 1.对设备轮询测距\n 2.结束")
+    while True:
+        try:
+            tag = int(input("请输入要选择的操作: "))
+            if tag == 1:
+                # 对设备轮询测距
+                begin_time = time()
+                print("对设备测距")
+                for x in range(5):
+                    for y in range(1, 5):
+                        z = modbaudid(Baudrate[x], y)
+                        if z == '正常':
+                            print("当前波特率：", Baudrate[x], "当前站号：", y)
+
+                end_time = time()
+                run_time = end_time - begin_time
+                print("查询运行时间：", run_time)
+                break
+
+            elif tag == 2:
+                # 结束
+                print(" ")
+                break
+
+            else:
+                print("输入不正确，请重新输入")
+
+        except ValueError:
+            print("输入不正确，请重新输入")
+
+
+if __name__ == "__main__":
+    selected_port = choose_serial_port()
+
+    print("开始扫描当前雷达站号和波特率,全部扫描结束时间为90S左右")
+    print("雷达站号范围:1-10,波特率:9600、19200、38400、57600、115200")
+    print("----------------------------------------------------------")
+
     begin_time = time()
-    print("对修改后的设备重新进行测距")
+    flag = False
     for x in range(5):
-        for y in range(1, 5):     
+        for y in range(1, 5):
             z = modbaudid(Baudrate[x], y)
             if z == '正常':
                 print("当前波特率：", Baudrate[x], "当前站号：", y)
-                
+                baudrate = Baudrate[x]
+                id = y
+                lidarfunc(baudrate, id)
+                flag = True
+                break
+        if flag:
+            break
+
     end_time = time()
     run_time = end_time - begin_time
-    print("查询运行时间：", run_time)
+    print("查询运行时间：", run_time, "\n")
+
+    endfunction()
