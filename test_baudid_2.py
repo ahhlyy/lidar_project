@@ -18,6 +18,7 @@ from pymodbus.payload import BinaryPayloadBuilder
 Baudrate = [9600, 115200, 19200, 38400, 57600]
 
 
+# 找出所有串口
 def find_serial_ports():
     """
     自动识别可用的串口号
@@ -29,6 +30,7 @@ def find_serial_ports():
     return result
 
 
+# 选择串口
 def choose_serial_port():
     """
     进行串口选择并返回选择的串口名称
@@ -54,8 +56,8 @@ def choose_serial_port():
                 print("输入不正确，请重新输入")
 
 
-# 设备测距
-def modbaudid(BAUDRATE, SlaveID):
+# 测距配置
+def mod_lidar(BAUDRATE, SlaveID):
     red = []
     alarm = ""
     master = establish_serial(selected_port, BAUDRATE)
@@ -124,7 +126,7 @@ def modifybaud_l(BAUDRATE, SlaveID, New_BAUDRATE):
     return red, alarm  # 如果异常就返回[],故障信息
 
 
-#id配置
+# id配置
 def modifyid(BAUDRATE, SlaveID, New_SlaveID):
     red = []
     alarm = ""
@@ -143,7 +145,7 @@ def modifyid(BAUDRATE, SlaveID, New_SlaveID):
     return red, alarm  # 如果异常就返回[],故障信息
 
 
-#保存配置
+# 保存配置
 def savelidar(BAUDRATE, SlaveID):
     red = []
     alarm = ""
@@ -162,7 +164,7 @@ def savelidar(BAUDRATE, SlaveID):
     return red, alarm  # 如果异常就返回[],故障信息
 
 
-#重启配置
+# 重启配置
 def resetlidar(BAUDRATE, SlaveID):
     red = []
     alarm = ""
@@ -180,40 +182,18 @@ def resetlidar(BAUDRATE, SlaveID):
 
     return red, alarm  # 如果异常就返回[],故障信息
 
-'''
-def lidar_command():
-    # 读取寄存器
-    address = 0x0001
-    count = 10
-    result = client.read_holding_registers(address, count)
-    if result.isError():
-        print("读取寄存器失败")
-    else:
-        print("读取寄存器成功")
-        print(result.registers)
-
-    # 写入寄存器
-    address = 0x0001
-    value = 0x0001
-    result = client.write_register(address, value)
-    if result.isError():
-        print("写入寄存器失败")
-    else:
-        print("写入寄存器成功")
-'''
-
 
 # 主菜单页面
 def main_menu():
     print("主菜单功能选择:")
-    print("1.设备测距")
+    print("1.设备查找")
     print("2.雷达配置")
     print("3.雷达指令")
     print("4.退出程序")
     print("----------------------------------------------------------")
 
 
-# 配置子菜单
+# 配置子菜单页面
 def setting_sub_menu():
     print("子菜单功能选择:")
     print('{:>11}'.format('1.修改波特率'))
@@ -222,7 +202,7 @@ def setting_sub_menu():
     print("----------------------------------------------------------")
 
 
-# 指令子菜单
+# 指令子菜单页面
 def command_sub_menu():
     print('{:>10}'.format('1.测距指令'))
     print('{:>10}'.format('2.保存指令'))
@@ -292,7 +272,7 @@ def run_setsubmenu():
 # 指令驱动
 def run_cmdsubmenu():
     while True:
-        choice = int(input("请输入您的选择："))
+        choice = int(input("指令子菜单下请输入您的选择："))
         print("----------------------------------------------------------")
 
         if choice == 1:
@@ -320,7 +300,7 @@ def set_newbaud():
     while check_baudnum not in Baudrate:
         print("波特率输入不正确,请重新输入")
         check_baudnum = int(input())
-    
+
     new_baudrate = check_baudnum
 
     return new_baudrate
@@ -337,8 +317,86 @@ def set_newid():
         check_idnum = int(input())
 
     new_id = check_idnum
-    
+
     return new_id
+
+
+# 记下找到设备的雷达波特率和id值
+def find_lidar_baudid():
+    flag = False
+    for x in range(5):
+        for y in range(1, 5):
+            z = mod_lidar(Baudrate[x], y)
+            if z == '正常':
+                print("当前修改设备的波特率：", Baudrate[x], "当前站号：", y)
+                baudrate = Baudrate[x]
+                id = y
+                flag = True
+                break
+        if flag:
+            break
+
+    return baudrate, id
+
+
+# 查找雷达设备
+def find_lidar():
+    print("开始扫描当前雷达站号和波特率,全部扫描结束时间为90S左右")
+    print("雷达站号范围:1-10,波特率:9600、19200、38400、57600、115200")
+    print("----------------------------------------------------------")
+
+    begin_time = time()
+    flag = False
+    for x in range(5):
+        for y in range(1, 5):
+            z = mod_lidar(Baudrate[x], y)
+            if z == '正常':
+                print("测距成功")
+                print("当前波特率：", Baudrate[x], "当前站号：", y)
+                baudrate = Baudrate[x]
+                id = y
+                flag = True
+                break
+        if flag:
+            break
+
+    end_time = time()
+    run_time = end_time - begin_time
+    print("查询运行时间：", run_time, "\n")
+
+    return baudrate, id
+
+
+# 记下找到设备的雷达波特率
+def find_lidar_baud():
+    flag = False
+    for x in range(5):
+        for y in range(1, 5):
+            z = mod_lidar(Baudrate[x], y)
+            if z == '正常':
+                baudrate = Baudrate[x]
+                flag = True
+                break
+        if flag:
+            break
+
+    return baudrate
+
+
+# 记下找到设备的雷达id值
+def find_lidar_id():
+    flag = False
+    for x in range(5):
+        for y in range(1, 5):
+            z = mod_lidar(Baudrate[x], y)
+            if z == '正常':
+                id = y
+                flag = True
+                break
+        if flag:
+            break
+
+    return id
 
 
 # 设定串口为从站
@@ -355,52 +413,6 @@ def establish_serial(selected_port, BAUDRATE):
     return master
 
 
-# 记下找到设备的雷达波特率和id值
-def find_lidar_baudid():
-    flag = False
-    for x in range(5):
-        for y in range(1, 5):
-            z = modbaudid(Baudrate[x], y)
-            if z == '正常':
-                print("当前修改设备的波特率：", Baudrate[x], "当前站号：", y)
-                baudrate = Baudrate[x]
-                id = y
-                flag = True
-                break
-        if flag:
-            break
-
-    return baudrate, id
-
-
-def find_lidar():
-    print("开始扫描当前雷达站号和波特率,全部扫描结束时间为90S左右")
-    print("雷达站号范围:1-10,波特率:9600、19200、38400、57600、115200")
-    print("----------------------------------------------------------")
-
-    begin_time = time()
-    flag = False
-    for x in range(5):
-        for y in range(1, 5):
-            z = modbaudid(Baudrate[x], y)
-            if z == '正常':
-                print("测距成功")
-                print("当前波特率：", Baudrate[x], "当前站号：", y)
-                baudrate = Baudrate[x]
-                id = y
-                #lidarfunc(baudrate, id)
-                flag = True
-                break
-        if flag:
-            break
-
-    end_time = time()
-    run_time = end_time - begin_time
-    print("查询运行时间：", run_time, "\n")
-
-    return baudrate, id
-
-
 def endfunction():
     print("操作完毕\n 1.对设备轮询测距\n 2.结束")
     while True:
@@ -412,7 +424,7 @@ def endfunction():
                 print("对设备测距")
                 for x in range(5):
                     for y in range(1, 5):
-                        z = modbaudid(Baudrate[x], y)
+                        z = mod_lidar(Baudrate[x], y)
                         if z == '正常':
                             print("当前波特率：", Baudrate[x], "当前站号：", y)
                             baudrate1 = Baudrate[x]
