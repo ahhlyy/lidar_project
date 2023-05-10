@@ -240,11 +240,35 @@ def run_mainmenu():
         else:
             print("无效的选择，请重新输入。")   
 
+# 测距驱动用户输入波特率
+def run_measure_inputbaud():
+    print("请先输入雷达波特率:")
+    check_baudnum = int(input("波特率:"))
+    while check_baudnum not in Baudrate:
+        print("波特率输入格式不正确,请重新输入")
+        print("----------------------------------------------------------")
 
-# 测距驱动1
-def run_measure_sub1menu():
+    inputbaud = check_baudnum
+
+    return inputbaud
+
+
+# 测距驱动用户输入id
+def run_measure_inputid():
+    print("请先输入雷达id:")
+    check_idnum = int(input("id:"))
+    while check_idnum not in range(256):
+        print("id输入格式不正确,请重新输入")
+        print("----------------------------------------------------------")
+
+    inputbaud = check_idnum
+
+    return inputbaud
+
+
+# 测距驱动用户输入波特率和id
+def run_measure_inputbaudid():
     while True:
-        while True:
             print("请先输入雷达波特率和id:")
             input_str = input()
             input_list = input_str.split()
@@ -256,31 +280,30 @@ def run_measure_sub1menu():
             
             print("输入格式不正确，请重新输入")
             print("----------------------------------------------------------")
-        
-        try:
-            master = establish_serial(selected_port, inputbaud)
-            read = master.execute(slave=inputid, function_code=cst.READ_HOLDING_REGISTERS, starting_address=0,
-                                    quantity_of_x=2)
-            print("连接雷达设备成功")
-            print("当前雷达的测距结果为:", read)
-            print("当前波特率：", inputbaud, "当前站号：", inputid)
-            print("----------------------------------------------------------")
-            lidarmeasure_sub2_menu()
-            run_measure_sub2menu()
-            break
-        
-        except:
-            print("连接雷达设备失败,请重新检查波特率和id")
-            print("----------------------------------------------------------")
-                
 
-        #if read is not None:
-        #    lidarmeasure_sub2_menu()
-        #    run_measure_sub2menu()
-        #    break
+    return inputbaud, inputid
 
-        #lidarbaud = 
-        #lidarid = 
+
+# 测距驱动1
+def run_measure_sub1menu():
+    while True:
+        info_baudid = run_measure_inputbaudid()
+        inputbaud = info_baudid[0]
+        inputid = info_baudid[1]
+        master = establish_serial(selected_port, inputbaud)
+        read = master.execute(slave=inputid, function_code=cst.READ_HOLDING_REGISTERS, starting_address=0,
+                              quantity_of_x=2)
+        print("连接雷达设备成功")
+        print("当前雷达的测距结果为:", read)
+        print("当前波特率：", inputbaud, "当前站号：", inputid)
+        print("----------------------------------------------------------")
+        lidarmeasure_sub2_menu()
+        run_measure_sub2menu()
+        break
+        
+    print("连接雷达设备失败,请重新检查波特率和id")
+    print("----------------------------------------------------------")
+            
 
 
 # 测距驱动2
@@ -290,11 +313,33 @@ def run_measure_sub2menu():
         print("----------------------------------------------------------")
 
         if choice == 1:
-            func3()
+            find_lidar()
+            lidarmeasure_sub2_menu()
         elif choice == 2:
-            func4()
+            info_baudid = run_measure_inputbaudid()
+            baudrate = info_baudid[0]
+            id = info_baudid[1]
+            new_baudrate = set_newbaud()
+            # 修改设备的波特率
+            modifybaud_h(baudrate, id, new_baudrate)
+            modifybaud_l(baudrate, id, new_baudrate)
+            savelidar(baudrate, id)
+            resetlidar(baudrate, id)
+            print("成功,波特率修改为:", new_baudrate)
+            print("----------------------------------------------------------")
+            lidarmeasure_sub2_menu()
         elif choice == 3:
-            func5()
+            info_baudid = run_measure_inputbaudid()
+            baudrate = info_baudid[0]
+            id = info_baudid[1]
+            new_id = set_newid()
+            # 修改设备的ID
+            modifyid(baudrate, id, new_id)
+            savelidar(baudrate, id)
+            resetlidar(baudrate, id)
+            print("成功,id修改为:", new_id)
+            print("----------------------------------------------------------")
+            lidarmeasure_sub2_menu()
         elif choice == 4:
             break
         else:
