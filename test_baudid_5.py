@@ -64,15 +64,15 @@ def mod_lidar(BAUDRATE, SlaveID):
     master.open()
     master.set_timeout(0.55)
     master.set_verbose(True)
-    #print("modlidar1", SlaveID)
+    # print("modlidar1", SlaveID)
     try:
         # 读保持寄存器
-        #print("modlidar2", SlaveID)
+        # print("modlidar2", SlaveID)
         red = master.execute(slave=SlaveID, function_code=cst.READ_HOLDING_REGISTERS, starting_address=0,
                              quantity_of_x=2)  # 这里可以修改需要读取的功能码
         master.set_timeout(0.55)
         print(red)
-        #print("modlidar3", SlaveID)
+        # print("modlidar3", SlaveID)
         alarm = "正常"
 
         return alarm
@@ -166,6 +166,30 @@ def modifyid(BAUDRATE, SlaveID, New_SlaveID):
     return red, alarm  # 如果异常就返回[],故障信息
 
 
+# 恢复出厂配置
+def restore_factory(BAUDRATE, SlaveID):
+    red = []
+    alarm = ""
+    master = establish_serial(selected_port, BAUDRATE)
+    master.open()
+    master.set_timeout(0.55)
+    try:
+        # 写保持寄存器
+        red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x89,
+                             output_value=0)  # 恢复出厂指令
+        master.set_timeout(0.55)
+        alarm = "正常"
+
+        return alarm
+
+    except Exception as exc:
+        alarm = (str(exc))
+
+    master.close()
+
+    return red, alarm  # 如果异常就返回[],故障信息
+
+
 # 保存配置
 def savelidar(BAUDRATE, SlaveID):
     red = []
@@ -176,7 +200,7 @@ def savelidar(BAUDRATE, SlaveID):
     try:
         # 写保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x80,
-                             output_value=0)  # 重启设备指令
+                             output_value=0)  # 保存设备指令
         master.set_timeout(0.55)
         alarm = "正常"
 
@@ -278,20 +302,20 @@ def find_lidar():
             z = mod_lidar(Baudrate[x], y)
             baudrate = Baudrate[x]
             id = y
-            #print("1", baudrate, id)
-            #print(z)
+            # print("1", baudrate, id)
+            # print(z)
             if z == '正常':
                 print("测距成功")
                 print("当前波特率：", Baudrate[x], "当前站号：", y)
                 baudrate = Baudrate[x]
                 id = y
-                #print("2", baudrate, id)
+                # print("2", baudrate, id)
                 flag = True
                 break
-            
+
         if flag:
             break
-        
+
     end_time = time()
     run_time = end_time - begin_time
     print("查询运行时间：", run_time, "\n")
@@ -303,16 +327,16 @@ def find_lidar():
 def establish_serial(selected_port, BAUDRATE):
     master = modbus_rtu.RtuMaster(
         serial.Serial(port=selected_port,
-                    baudrate=BAUDRATE,
-                    bytesize=8,
-                    parity='N',
-                    stopbits=1,
-                    timeout=0.5))
+                      baudrate=BAUDRATE,
+                      bytesize=8,
+                      parity='N',
+                      stopbits=1,
+                      timeout=0.5))
     master.set_timeout(0.55)  # 50ms
     master.set_verbose(True)
 
-    #print("eastablish", BAUDRATE)
-    #print(master)
+    # print("eastablish", BAUDRATE)
+    # print(master)
 
     return master
 
@@ -348,7 +372,8 @@ def lidarsetting_sub_menu():
     print("配置子菜单功能选择:")
     print('{:>11}'.format('1.修改波特率'))
     print('{:>12}'.format('2.修改雷达id'))
-    print('{:>11}'.format('3.返回主菜单'))
+    print('{:>12}'.format('3.恢复出厂设置'))
+    print('{:>11}'.format('4.返回主菜单'))
     print("----------------------------------------------------------")
 
 
@@ -363,14 +388,14 @@ def run_mainmenu():
             find_lidar()
         elif choice == 2:
             lidarmeasure_sub1_menu()
-            run_measure_sub1menu()
+            run_measure_submenu()
         elif choice == 3:
             lidarsetting_sub_menu()
             run_set_submenu()
         elif choice == 4:
             break
         else:
-            print("无效的选择，请重新输入。")   
+            print("无效的选择，请重新输入。")
 
 
 # 测距驱动用户输入波特率和id
@@ -392,7 +417,7 @@ def run_measure_inputbaudid():
 
 
 # 测距驱动1
-def run_measure_sub1menu():
+def run_measure_submenu():
     while True:
         read = []
         info_baudid = run_measure_inputbaudid()
@@ -444,9 +469,9 @@ def run_measure_sub1menu():
                     resetlidar(baudrate, id)
                     print("成功,波特率修改为:", new_baudrate)
                     print("----------------------------------------------------------")
-                    #lidarmeasure_sub2_menu()
+                    # lidarmeasure_sub2_menu()
                     break
-                    
+
                 elif choice == 2:
                     print("提示：当前的雷达的站号为", info_baudid[1])
                     baudrate = info_baudid[0]
@@ -458,8 +483,8 @@ def run_measure_sub1menu():
                     resetlidar(baudrate, id)
                     print("成功,id修改为:", new_id)
                     print("----------------------------------------------------------")
-                    #lidarmeasure_sub2_menu()
-                    break 
+                    # lidarmeasure_sub2_menu()
+                    break
                 elif choice == 3:
                     break
                 else:
@@ -472,7 +497,7 @@ def run_set_submenu():
     while True:
         choice = int(input("配置子菜单下请输入您的选择："))
         print("----------------------------------------------------------")
-        
+
         if choice == 1:
             baudrate, id = find_lidar_baudid()
             new_baudrate = set_newbaud()
@@ -495,6 +520,15 @@ def run_set_submenu():
             print("----------------------------------------------------------")
             lidarsetting_sub_menu()
         elif choice == 3:
+            baudrate, id = find_lidar_baudid()
+            # 恢复设备出厂设置
+            restore_factory(baudrate, id)
+            savelidar(baudrate, id)
+            resetlidar(baudrate, id)
+            print("成功,恢复出厂设置:波特率为  115200,站号为  1")
+            print("----------------------------------------------------------")
+            lidarsetting_sub_menu()
+        elif choice == 4:
             break
         else:
             print("无效的选择，请重新输入。")
