@@ -195,7 +195,6 @@ def main_menu():
 
 # 设备测距子菜单页面1
 def lidarmeasure_sub1_menu():
-    #print("请先输入雷达波特率和id:")
     print("示例,用空格分隔：")
     print("115200 1")
     print("----------------------------------------------------------")
@@ -240,6 +239,7 @@ def run_mainmenu():
         else:
             print("无效的选择，请重新输入。")   
 
+
 # 测距驱动用户输入波特率
 def run_measure_inputbaud():
     print("请先输入雷达波特率:")
@@ -269,17 +269,17 @@ def run_measure_inputid():
 # 测距驱动用户输入波特率和id
 def run_measure_inputbaudid():
     while True:
-            print("请先输入雷达波特率和id:")
-            input_str = input()
-            input_list = input_str.split()
-            if len(input_list) == 2 and input_list[0].isdigit() and input_list[1].isdigit():
-                inputbaud = int(input_list[0])
-                inputid = int(input_list[1])
-                print("----------------------------------------------------------")
-                break
-            
-            print("输入格式不正确，请重新输入")
+        print("请先输入雷达波特率和id:")
+        input_str = input()
+        input_list = input_str.split()
+        if len(input_list) == 2 and input_list[0].isdigit() and input_list[1].isdigit():
+            inputbaud = int(input_list[0])
+            inputid = int(input_list[1])
             print("----------------------------------------------------------")
+            break
+        
+        print("输入格式不正确，请重新输入")
+        print("----------------------------------------------------------")
 
     return inputbaud, inputid
 
@@ -287,23 +287,81 @@ def run_measure_inputbaudid():
 # 测距驱动1
 def run_measure_sub1menu():
     while True:
+        read = []
         info_baudid = run_measure_inputbaudid()
         inputbaud = info_baudid[0]
         inputid = info_baudid[1]
         master = establish_serial(selected_port, inputbaud)
-        read = master.execute(slave=inputid, function_code=cst.READ_HOLDING_REGISTERS, starting_address=0,
-                              quantity_of_x=2)
-        print("连接雷达设备成功")
-        print("当前雷达的测距结果为:", read)
-        print("当前波特率：", inputbaud, "当前站号：", inputid)
-        print("----------------------------------------------------------")
-        lidarmeasure_sub2_menu()
-        run_measure_sub2menu()
-        break
+        master.open()
+        try:
+            read = master.execute(slave=inputid, function_code=cst.READ_HOLDING_REGISTERS, starting_address=0,
+                                  quantity_of_x=2)
         
-    print("连接雷达设备失败,请重新检查波特率和id")
-    print("----------------------------------------------------------")
-            
+        except modbus_rtu.ModbusInvalidResponseError as e:
+            print("ModbusError: {}".format(e))
+        
+        master.close()
+
+        if len(read) == 0:
+            print("连接雷达设备失败,请重新检查波特率和id")
+            print("----------------------------------------------------------")
+
+        else:           
+            print("连接雷达设备成功")
+            print("当前雷达的测距结果为:", read)
+            print("当前波特率：", inputbaud, "当前站号：", inputid)
+            print("----------------------------------------------------------")
+            correct_baud = inputbaud
+            correct_id = inputid
+            lidarmeasure_sub2_menu()
+            #run_measure_sub2menu()
+            while True:
+                choice = int(input("测距子菜单下请输入您的选择："))
+                print("----------------------------------------------------------")
+
+                if choice == 1:
+                    find_lidar()
+                    lidarmeasure_sub2_menu()
+                elif choice == 2:
+                    #info_baudid = run_measure_inputbaudid()
+                    #info_baudid = run_measure_sub1menu()
+                    print("提示：当前的雷达的波特率为", info_baudid[0])
+                    baudrate = info_baudid[0]
+                    id = info_baudid[1]
+                    new_baudrate = set_newbaud()
+                    # 修改设备的波特率
+                    modifybaud_h(baudrate, id, new_baudrate)
+                    modifybaud_l(baudrate, id, new_baudrate)
+                    savelidar(baudrate, id)
+                    resetlidar(baudrate, id)
+                    print("成功,波特率修改为:", new_baudrate)
+                    print("----------------------------------------------------------")
+                    #lidarmeasure_sub2_menu()
+                    break
+                    
+                elif choice == 3:
+                    #info_baudid = run_measure_inputbaudid()
+                    print("提示：当前的雷达的站号为", info_baudid[1])
+                    baudrate = info_baudid[0]
+                    id = info_baudid[1]
+                    new_id = set_newid()
+                    # 修改设备的ID
+                    modifyid(baudrate, id, new_id)
+                    savelidar(baudrate, id)
+                    resetlidar(baudrate, id)
+                    print("成功,id修改为:", new_id)
+                    print("----------------------------------------------------------")
+                    #lidarmeasure_sub2_menu()
+                    break
+                    
+                elif choice == 4:
+                    break
+                else:
+                    print("无效的选择，请重新输入。")            
+            break
+    return correct_baud, correct_id
+
+
 
 
 # 测距驱动2
@@ -313,10 +371,12 @@ def run_measure_sub2menu():
         print("----------------------------------------------------------")
 
         if choice == 1:
-            find_lidar()
+            measure_lidar()
             lidarmeasure_sub2_menu()
         elif choice == 2:
-            info_baudid = run_measure_inputbaudid()
+            #info_baudid = run_measure_inputbaudid()
+            info_baudid = run_measure_sub1menu()
+            print("提示：当前的雷达的波特率为", info_baudid[0], ",站号为", info_baudid[1])
             baudrate = info_baudid[0]
             id = info_baudid[1]
             new_baudrate = set_newbaud()
@@ -329,7 +389,7 @@ def run_measure_sub2menu():
             print("----------------------------------------------------------")
             lidarmeasure_sub2_menu()
         elif choice == 3:
-            info_baudid = run_measure_inputbaudid()
+            info_baudid = run_measure_sub1menu()
             baudrate = info_baudid[0]
             id = info_baudid[1]
             new_id = set_newid()

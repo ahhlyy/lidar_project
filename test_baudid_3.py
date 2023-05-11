@@ -257,22 +257,25 @@ def run_measure_sub1menu():
             print("输入格式不正确，请重新输入")
             print("----------------------------------------------------------")
         
-        try:
+        while True:
+            read = []
             master = establish_serial(selected_port, inputbaud)
             read = master.execute(slave=inputid, function_code=cst.READ_HOLDING_REGISTERS, starting_address=0,
                                     quantity_of_x=2)
-            print("连接雷达设备成功")
-            print("当前雷达的测距结果为:", read)
-            print("当前波特率：", inputbaud, "当前站号：", inputid)
-            print("----------------------------------------------------------")
-            lidarmeasure_sub2_menu()
-            run_measure_sub2menu()
-            break
+            print(read[0], read[1])
+            if len(read) != 0:
+                print("连接雷达设备成功")
+                print("当前雷达的测距结果为:", read)
+                print("当前波特率：", inputbaud, "当前站号：", inputid)
+                print("----------------------------------------------------------")
+                lidarmeasure_sub2_menu()
+                run_measure_sub2menu()
+                break
         
-        except:
-            print("连接雷达设备失败,请重新检查波特率和id")
-            print("----------------------------------------------------------")
-                
+            else:
+                print("连接雷达设备失败,请重新检查波特率和id")
+                print("----------------------------------------------------------")
+            break    
 
         #if read is not None:
         #    lidarmeasure_sub2_menu()
