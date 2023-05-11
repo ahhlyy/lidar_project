@@ -443,7 +443,8 @@ def run_measure_submenu():
             print("连接雷达设备成功")
             print("当前波特率：", inputbaud, "当前站号：", inputid)
             master.open()          
-            for i in range(50):
+            number_of_times = int(input("请输入雷达测距次数:"))
+            for i in range(number_of_times):
                 read = master.execute(slave=inputid, function_code=cst.READ_HOLDING_REGISTERS, starting_address=0,
                                       quantity_of_x=2)
                 print("结果为:距离", read[0], "强度", read[1])
