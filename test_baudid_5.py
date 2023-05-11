@@ -62,7 +62,7 @@ def mod_lidar(BAUDRATE, SlaveID):
     alarm = ""
     master = establish_serial(selected_port, BAUDRATE)
     master.open()
-    master.set_timeout(0.15)
+    master.set_timeout(0.55)
     master.set_verbose(True)
     #print("modlidar1", SlaveID)
     try:
@@ -70,6 +70,7 @@ def mod_lidar(BAUDRATE, SlaveID):
         #print("modlidar2", SlaveID)
         red = master.execute(slave=SlaveID, function_code=cst.READ_HOLDING_REGISTERS, starting_address=0,
                              quantity_of_x=2)  # 这里可以修改需要读取的功能码
+        master.set_timeout(0.55)
         print(red)
         #print("modlidar3", SlaveID)
         alarm = "正常"
@@ -89,6 +90,7 @@ def modifybaud_h(BAUDRATE, SlaveID, New_BAUDRATE):
     alarm = ""
     master = establish_serial(selected_port, BAUDRATE)
     master.open()
+    master.set_timeout(0.55)
     try:
         # 将十进制转换为十六进制，并用0填充成8位
         New_BAUDRATE_hex = hex(int(New_BAUDRATE))[2:].zfill(8)
@@ -99,6 +101,7 @@ def modifybaud_h(BAUDRATE, SlaveID, New_BAUDRATE):
         # 写保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x83,
                              output_value=NH)  # 修改波特率高字节指令
+        master.set_timeout(0.55)
         alarm = "正常"
 
         return alarm
@@ -116,6 +119,7 @@ def modifybaud_l(BAUDRATE, SlaveID, New_BAUDRATE):
     alarm = ""
     master = establish_serial(selected_port, BAUDRATE)
     master.open()
+    master.set_timeout(0.55)
     try:
         # 将十进制转换为十六进制，并用0填充成8位
         New_BAUDRATE_hex = hex(int(New_BAUDRATE))[2:].zfill(8)
@@ -126,6 +130,7 @@ def modifybaud_l(BAUDRATE, SlaveID, New_BAUDRATE):
         # 写保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x84,
                              output_value=NL)  # 修改波特率低字节指令
+        master.set_timeout(0.55)
         alarm = "正常"
 
         return alarm
@@ -142,11 +147,13 @@ def modifyid(BAUDRATE, SlaveID, New_SlaveID):
     red = []
     alarm = ""
     master = establish_serial(selected_port, BAUDRATE)
-    master.open()  
+    master.open()
+    master.set_timeout(0.55)
     try:
         # 写保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x85,
                              output_value=New_SlaveID)  # 修改id指令
+        master.set_timeout(0.55)
         alarm = "正常"
 
         return alarm
@@ -165,10 +172,12 @@ def savelidar(BAUDRATE, SlaveID):
     alarm = ""
     master = establish_serial(selected_port, BAUDRATE)
     master.open()
+    master.set_timeout(0.55)
     try:
         # 写保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x80,
                              output_value=0)  # 重启设备指令
+        master.set_timeout(0.55)
         alarm = "正常"
 
         return alarm
@@ -187,10 +196,12 @@ def resetlidar(BAUDRATE, SlaveID):
     alarm = ""
     master = establish_serial(selected_port, BAUDRATE)
     master.open()
+    master.set_timeout(0.55)
     try:
         # 写保持寄存器
         red = master.execute(slave=SlaveID, function_code=cst.WRITE_SINGLE_REGISTER, starting_address=0x81,
                              output_value=1)  # 重启设备指令
+        master.set_timeout(0.55)
         alarm = "正常"
 
         return alarm
@@ -296,8 +307,8 @@ def establish_serial(selected_port, BAUDRATE):
                     bytesize=8,
                     parity='N',
                     stopbits=1,
-                    timeout=0.1))
-    master.set_timeout(0.15)  # 50ms
+                    timeout=0.5))
+    master.set_timeout(0.55)  # 50ms
     master.set_verbose(True)
 
     #print("eastablish", BAUDRATE)
@@ -389,10 +400,11 @@ def run_measure_sub1menu():
         inputid = info_baudid[1]
         master = establish_serial(selected_port, inputbaud)
         master.open()
+        master.set_timeout(0.55)
         try:
             read = master.execute(slave=inputid, function_code=cst.READ_HOLDING_REGISTERS, starting_address=0,
                                   quantity_of_x=2)
-
+            master.set_timeout(0.55)
         except modbus_rtu.ModbusInvalidResponseError as e:
             print("ModbusError: {}".format(e))
 
