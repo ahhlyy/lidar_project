@@ -274,7 +274,7 @@ def find_lidar_baudid():
     baudrate = 0
     id = 0
     for x in range(5):
-        for y in range(1, 5):
+        for y in range(1, 256):
             z = mod_lidar(Baudrate[x], y)
             if z == '正常':
                 print("当前设备的波特率：", Baudrate[x], "当前站号：", y)
@@ -298,7 +298,7 @@ def find_lidar():
     begin_time = time()
     flag = False
     for x in range(5):
-        for y in range(1, 5):
+        for y in range(1, 256):
             z = mod_lidar(Baudrate[x], y)
             baudrate = Baudrate[x]
             id = y
