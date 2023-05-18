@@ -8,15 +8,8 @@ import modbus_tk.defines as cst
 from modbus_tk import modbus_rtu
 import time  # 添加定时器
 from time import *
-import numpy as np
-import sys
-from pymodbus.constants import Endian
-from pymodbus.client.sync import ModbusSerialClient
-from pymodbus.payload import BinaryPayloadDecoder
-from pymodbus.payload import BinaryPayloadBuilder
 
 Baudrate = [9600, 115200, 19200, 38400, 57600]
-
 
 # 找出所有串口
 def find_serial_ports():
@@ -290,7 +283,7 @@ def find_lidar_baudid():
 
 # 查找雷达设备
 def find_lidar():
-    print("开始扫描当前雷达站号和波特率,全部扫描结束时间为90S左右")
+    print("开始扫描当前雷达站号和波特率,全部扫描结束时间为200S左右")
     print("雷达站号范围:1-255,波特率:9600、19200、38400、57600、115200")
     print("----------------------------------------------------------")
     baudrate = 0
